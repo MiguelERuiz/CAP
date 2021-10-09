@@ -1,0 +1,15 @@
+# Object and report files
+*.o
+*.optrpt
+
+# Report
+e0*/
+*.advixeproj
+*advidb2
+report*/
+*.dflgadvixe
+*infoadvixe
+*-Report/
+
+# VSCode
+.vscode/
