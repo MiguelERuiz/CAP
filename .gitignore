@@ -11,5 +11,13 @@ report*/
 *infoadvixe
 *-Report/
 
+# binaries
+black-scholes
+nbody
+main
+
 # VSCode
 .vscode/
+
+# other
+*.def

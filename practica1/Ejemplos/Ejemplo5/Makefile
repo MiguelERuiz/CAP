@@ -2,7 +2,7 @@ NAME=nbody
 
 CC=icc
 
-CFLAGS=-O2 -g -qopt-report=5 -xhost -I.
+CFLAGS=-O2 -g -qopt-report=5 -xCORE-AVX2 -I.
 
 DEPS = gtime.h memory.h nbody.h nbody_routines.h
 
