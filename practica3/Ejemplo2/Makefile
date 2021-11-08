@@ -1,5 +1,5 @@
 
-MPICC=mpicc
+MPICC=mpiicc
 CC=icc
 CFLAGS=-O2 -lm
 
@@ -8,7 +8,7 @@ all:
 	$(MPICC) -o piparallel piparallel.c $(CFLAGS)
 
 run:
-	mpirun -np 2 ./piparallel
+	mpirun -np 2 ./piparallel 100000000000000
 
 clean:
 	rm -f piserial piparallel

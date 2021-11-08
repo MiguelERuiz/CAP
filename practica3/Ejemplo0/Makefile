@@ -5,7 +5,7 @@ all:
 	${MPICC} -o ${EXECS} hello.c
 
 run:
-	mpirun -np 2 ./${EXECS}
+	mpirun -np 4 ./${EXECS}
 
 clean:
 	rm -f ${EXECS}
