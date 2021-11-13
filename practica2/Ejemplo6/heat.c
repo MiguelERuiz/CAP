@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <omp.h>
+#include <immintrin.h>
 
 #include "colormap.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -33,20 +34,29 @@ static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 	matrix[idx(source_x, source_y, N)] = SOURCE_TEMP;
 
 	// fill borders
-	for (unsigned int x = 0; x < N; ++x) {
-		matrix[idx(x, 0,   N)] = BOUNDARY_TEMP;
-		matrix[idx(x, N-1, N)] = BOUNDARY_TEMP;
-	}
-	for (unsigned int y = 0; y < N; ++y) {
-		matrix[idx(0,   y, N)] = BOUNDARY_TEMP;
-		matrix[idx(N-1, y, N)] = BOUNDARY_TEMP;
+	#pragma omp parallel
+	{
+		#pragma omp for schedule(static) nowait
+		for (unsigned int x = 0; x < N; ++x) {
+			matrix[idx(x, 0,   N)] = BOUNDARY_TEMP;
+			matrix[idx(x, N-1, N)] = BOUNDARY_TEMP;
+		}
+
+		#pragma omp for schedule(static)
+		for (unsigned int y = 0; y < N; ++y) {
+			matrix[idx(0,   y, N)] = BOUNDARY_TEMP;
+			matrix[idx(N-1, y, N)] = BOUNDARY_TEMP;
+		}
 	}
 }
 
 
 static void step(unsigned int source_x, unsigned int source_y, const float * current, float * next) {
 
+	#pragma omp parallel for //schedule(static)
 	for (unsigned int y = 1; y < N-1; ++y) {
+		// #pragma omp simd
+		#pragma vector aligned
 		for (unsigned int x = 1; x < N-1; ++x) {
 			if ((y == source_y) && (x == source_x)) {
 				continue;
@@ -62,9 +72,16 @@ static void step(unsigned int source_x, unsigned int source_y, const float * cur
 
 static float diff(const float * current, const float * next) {
 	float maxdiff = 0.0f;
+	#pragma omp parallel for //schedule(static)
 	for (unsigned int y = 1; y < N-1; ++y) {
+		#pragma vector aligned
 		for (unsigned int x = 1; x < N-1; ++x) {
-			maxdiff = fmaxf(maxdiff, fabsf(next[idx(x, y, N)] - current[idx(x, y, N)]));
+			float currentdiff = fabsf(next[idx(x, y, N)] - current[idx(x, y, N)]);
+			maxdiff = currentdiff > maxdiff ? currentdiff : maxdiff;
+			// Cambiar la linea de arriba por lo siguiente:
+			// if (currentdiff > maxdiff) {
+				// maxdiff = currentdiff;
+			// }
 		}
 	}
 	return maxdiff;
@@ -73,9 +90,10 @@ static float diff(const float * current, const float * next) {
 
 void write_png(float * current, int iter) {
 	char file[100];
-	uint8_t * image = malloc(3 * N * N * sizeof(uint8_t));
+	uint8_t * image = _mm_malloc(3 * N * N * sizeof(uint8_t), 32);
 	float maxval = fmaxf(SOURCE_TEMP, BOUNDARY_TEMP);
 
+	#pragma omp parallel for collapse(2) //schedule(static)
 	for (unsigned int y = 0; y < N; ++y) {
 		for (unsigned int x = 0; x < N; ++x) {
 			unsigned int i = idx(x, y, N);
@@ -85,15 +103,15 @@ void write_png(float * current, int iter) {
 	sprintf(file,"heat%i.png", iter);
 	stbi_write_png(file, N, N, 3, image, 3 * N);
 
-	free(image);
+	_mm_free(image);
 }
 
 
 int main() {
 	size_t array_size = N * N * sizeof(float);
 
-	float * current = malloc(array_size);
-	float * next = malloc(array_size);
+	float * current = _mm_malloc(array_size, 32);
+	float * next = _mm_malloc(array_size, 32);
 
 	srand(0);
 	unsigned int source_x = rand() % (N-2) + 1;
@@ -122,8 +140,8 @@ int main() {
 
 	write_png(current, MAX_ITERATIONS);
 
-	free(current);
-	free(next);
+	_mm_free(current);
+	_mm_free(next);
 
 	return 0;
 }

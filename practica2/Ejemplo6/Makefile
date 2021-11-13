@@ -1,5 +1,5 @@
-CC=gcc
-CFLAGS=-Wall -std=c99 -O3 -fopenmp
+CC=icc
+CFLAGS=-Wall -std=c99 -O3 -qopenmp -qopt-report=5
 
 LDFLAGS=-lm
 
@@ -11,4 +11,4 @@ heat: heat.o
 .PHONY: clean
 
 clean:
-	rm -rf *.o heat
+	rm -rf *.o heat *png *optrpt

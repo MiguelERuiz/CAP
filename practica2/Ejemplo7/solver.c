@@ -10,6 +10,7 @@ typedef enum { NONE = 0, VERTICAL = 1, HORIZONTAL = 2 } boundary;
 static void add_source(unsigned int n, float * x, const float * s, float dt)
 {
     unsigned int size = (n + 2) * (n + 2);
+    #pragma omp parallel for schedule(auto)
     for (unsigned int i = 0; i < size; i++) {
         x[i] += dt * s[i];
     }
@@ -17,6 +18,7 @@ static void add_source(unsigned int n, float * x, const float * s, float dt)
 
 static void set_bnd(unsigned int n, boundary b, float * x)
 {
+    #pragma omp parallel for
     for (unsigned int i = 1; i <= n; i++) {
         x[IX(0, i)]     = b == VERTICAL ? -x[IX(1, i)] : x[IX(1, i)];
         x[IX(n + 1, i)] = b == VERTICAL ? -x[IX(n, i)] : x[IX(n, i)];
@@ -32,12 +34,33 @@ static void set_bnd(unsigned int n, boundary b, float * x)
 static void lin_solve(unsigned int n, boundary b, float * x, const float * x0, float a, float c)
 {
     for (unsigned int k = 0; k < 20; k++) {
-        for (unsigned int i = 1; i <= n; i++) {
-            for (unsigned int j = 1; j <= n; j++) {
-                x[IX(i, j)] = (x0[IX(i, j)] + a * (x[IX(i - 1, j)] +
-                                                   x[IX(i + 1, j)] +
-                                                   x[IX(i, j - 1)] +
-                                                   x[IX(i, j + 1)])) / c;
+
+        #pragma omp parallel
+        {
+            // Update Red nodes
+            #pragma omp for schedule(static) firstprivate (a, c, x0) nowait
+            for (unsigned int i = 1; i <= n; i++) {
+                for (unsigned int j = 1; j <= n; j++) {
+                    if((i+j)%2 == 1){
+                        x[IX(i, j)] = (x0[IX(i, j)] + a * (x[IX(i - 1, j)] +
+                                                           x[IX(i + 1, j)] +
+                                                           x[IX(i, j - 1)] +
+                                                           x[IX(i, j + 1)])) / c;
+                    }
+                }
+            }
+
+            // Update Black nodes
+            #pragma omp for schedule(static) firstprivate (a, c, x0)
+            for (unsigned int i = 1; i <= n; i++) {
+                for (unsigned int j = 1; j <= n; j++) {
+                    if((i+j)%2 == 0){
+                        x[IX(i, j)] = (x0[IX(i, j)] + a * (x[IX(i - 1, j)] +
+                                                           x[IX(i + 1, j)] +
+                                                           x[IX(i, j - 1)] +
+                                                           x[IX(i, j + 1)])) / c;
+                    }
+                }
             }
         }
         set_bnd(n, b, x);
@@ -56,7 +79,10 @@ static void advect(unsigned int n, boundary b, float * d, const float * d0, cons
     float x, y, s0, t0, s1, t1;
 
     float dt0 = dt * n;
+    #pragma omp parallel for private(x,y,i0,i1,j0,j1,s0,s1,t0,t1)
     for (unsigned int i = 1; i <= n; i++) {
+        // #pragma omp vector aligned
+        // #pragma omp simd
         for (unsigned int j = 1; j <= n; j++) {
             x = i - dt0 * u[IX(i, j)];
             y = j - dt0 * v[IX(i, j)];
@@ -87,6 +113,7 @@ static void advect(unsigned int n, boundary b, float * d, const float * d0, cons
 
 static void project(unsigned int n, float *u, float *v, float *p, float *div)
 {
+    #pragma omp parallel for // schedule(static)
     for (unsigned int i = 1; i <= n; i++) {
         for (unsigned int j = 1; j <= n; j++) {
             div[IX(i, j)] = -0.5f * (u[IX(i + 1, j)] - u[IX(i - 1, j)] +
@@ -99,6 +126,7 @@ static void project(unsigned int n, float *u, float *v, float *p, float *div)
 
     lin_solve(n, NONE, p, div, 1, 4);
 
+    #pragma omp parallel for // schedule(static)
     for (unsigned int i = 1; i <= n; i++) {
         for (unsigned int j = 1; j <= n; j++) {
             u[IX(i, j)] -= 0.5f * n * (p[IX(i + 1, j)] - p[IX(i - 1, j)]);
