@@ -21,3 +21,10 @@ main
 
 # other
 *.def
+
+# practica2 binaries
+hello
+prime
+heat
+demo
+headless
