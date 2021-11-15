@@ -36,13 +36,13 @@ static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 	// fill borders
 	#pragma omp parallel
 	{
-		#pragma omp for schedule(static) nowait
+		#pragma omp for nowait
 		for (unsigned int x = 0; x < N; ++x) {
 			matrix[idx(x, 0,   N)] = BOUNDARY_TEMP;
 			matrix[idx(x, N-1, N)] = BOUNDARY_TEMP;
 		}
 
-		#pragma omp for schedule(static)
+		#pragma omp for
 		for (unsigned int y = 0; y < N; ++y) {
 			matrix[idx(0,   y, N)] = BOUNDARY_TEMP;
 			matrix[idx(N-1, y, N)] = BOUNDARY_TEMP;
@@ -53,9 +53,8 @@ static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 
 static void step(unsigned int source_x, unsigned int source_y, const float * current, float * next) {
 
-	#pragma omp parallel for //schedule(static)
+	#pragma omp parallel for
 	for (unsigned int y = 1; y < N-1; ++y) {
-		// #pragma omp simd
 		#pragma vector aligned
 		for (unsigned int x = 1; x < N-1; ++x) {
 			if ((y == source_y) && (x == source_x)) {
@@ -72,16 +71,12 @@ static void step(unsigned int source_x, unsigned int source_y, const float * cur
 
 static float diff(const float * current, const float * next) {
 	float maxdiff = 0.0f;
-	#pragma omp parallel for //schedule(static)
+	#pragma omp parallel for
 	for (unsigned int y = 1; y < N-1; ++y) {
 		#pragma vector aligned
 		for (unsigned int x = 1; x < N-1; ++x) {
 			float currentdiff = fabsf(next[idx(x, y, N)] - current[idx(x, y, N)]);
 			maxdiff = currentdiff > maxdiff ? currentdiff : maxdiff;
-			// Cambiar la linea de arriba por lo siguiente:
-			// if (currentdiff > maxdiff) {
-				// maxdiff = currentdiff;
-			// }
 		}
 	}
 	return maxdiff;
@@ -93,7 +88,7 @@ void write_png(float * current, int iter) {
 	uint8_t * image = _mm_malloc(3 * N * N * sizeof(uint8_t), 32);
 	float maxval = fmaxf(SOURCE_TEMP, BOUNDARY_TEMP);
 
-	#pragma omp parallel for collapse(2) //schedule(static)
+	#pragma omp parallel for collapse(2)
 	for (unsigned int y = 0; y < N; ++y) {
 		for (unsigned int x = 0; x < N; ++x) {
 			unsigned int i = idx(x, y, N);

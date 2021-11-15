@@ -38,7 +38,7 @@ static void lin_solve(unsigned int n, boundary b, float * x, const float * x0, f
         #pragma omp parallel
         {
             // Update Red nodes
-            #pragma omp for schedule(static) firstprivate (a, c, x0) nowait
+            #pragma omp for firstprivate (a, c, x0) nowait
             for (unsigned int i = 1; i <= n; i++) {
                 for (unsigned int j = 1; j <= n; j++) {
                     if((i+j)%2 == 1){
@@ -51,7 +51,7 @@ static void lin_solve(unsigned int n, boundary b, float * x, const float * x0, f
             }
 
             // Update Black nodes
-            #pragma omp for schedule(static) firstprivate (a, c, x0)
+            #pragma omp for firstprivate (a, c, x0)
             for (unsigned int i = 1; i <= n; i++) {
                 for (unsigned int j = 1; j <= n; j++) {
                     if((i+j)%2 == 0){
@@ -81,8 +81,6 @@ static void advect(unsigned int n, boundary b, float * d, const float * d0, cons
     float dt0 = dt * n;
     #pragma omp parallel for private(x,y,i0,i1,j0,j1,s0,s1,t0,t1)
     for (unsigned int i = 1; i <= n; i++) {
-        // #pragma omp vector aligned
-        // #pragma omp simd
         for (unsigned int j = 1; j <= n; j++) {
             x = i - dt0 * u[IX(i, j)];
             y = j - dt0 * v[IX(i, j)];
@@ -113,7 +111,7 @@ static void advect(unsigned int n, boundary b, float * d, const float * d0, cons
 
 static void project(unsigned int n, float *u, float *v, float *p, float *div)
 {
-    #pragma omp parallel for // schedule(static)
+    #pragma omp parallel for
     for (unsigned int i = 1; i <= n; i++) {
         for (unsigned int j = 1; j <= n; j++) {
             div[IX(i, j)] = -0.5f * (u[IX(i + 1, j)] - u[IX(i - 1, j)] +
@@ -126,7 +124,7 @@ static void project(unsigned int n, float *u, float *v, float *p, float *div)
 
     lin_solve(n, NONE, p, div, 1, 4);
 
-    #pragma omp parallel for // schedule(static)
+    #pragma omp parallel for
     for (unsigned int i = 1; i <= n; i++) {
         for (unsigned int j = 1; j <= n; j++) {
             u[IX(i, j)] -= 0.5f * n * (p[IX(i + 1, j)] - p[IX(i - 1, j)]);
