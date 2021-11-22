@@ -5,7 +5,7 @@ CFLAGS=-O3 -lm -lrt -std=c99
 
 PGCC=pgcc -Minfo -fast -acc -ta=nvidia -tp=nehalem
 
-CFLAGS_OFFLOAD = $(CFLAGS) -fiopenmp -qopt-report
+CFLAGS_OFFLOAD = $(CFLAGS) -fiopenmp -fopenmp-targets=spir64 -qopt-report
 
 
 NAME=hello
