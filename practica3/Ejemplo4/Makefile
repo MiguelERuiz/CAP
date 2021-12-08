@@ -1,4 +1,6 @@
-CC=gcc
+MPICC=mpiicc
+
+CC=icc
 CFLAGS=-Wall -std=c99 -O3 -fopenmp
 
 LDFLAGS=-lm
@@ -6,9 +8,12 @@ LDFLAGS=-lm
 all: heat
 
 heat: heat.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(MPICC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 
+run:
+	mpirun -np 2 ./heat
+
 clean:
-	rm -rf *.o heat
+	rm -rf *.o heat heat20000.png
