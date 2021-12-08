@@ -13,7 +13,10 @@ heat: heat.o
 .PHONY: clean
 
 run:
-	mpirun -np 2 ./heat
+	mpirun -np 4 ./heat
 
 clean:
 	rm -rf *.o heat heat20000.png
+
+view:
+	eog heat20000.png
