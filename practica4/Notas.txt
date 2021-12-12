@@ -7,5 +7,14 @@ Ejemplo2
 * Minimizar el nº de transferencias entre cpu-gpu
 
 Ejemplo3
+--------
+
 
 Ejemplo4
+--------
+current y next en gpu
+
+heat.c(es un kernel)
+traerse el t_diff al host (cpu)
+
+hacerse una copia del current y next en la gpu
