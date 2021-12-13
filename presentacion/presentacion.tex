@@ -59,7 +59,7 @@
       \item Hemos visto cómo funciona en computación distribuida el paso de
       mensajes qué problemas puede resolver
       \item Ahora nos centraremos en cómo funciona el paso de mensajes en Erlang
-      y sus apliacaciones
+      y sus aplicaciones
     \end{itemize}
   \end{frame}
 
@@ -81,7 +81,6 @@
 
       \subsection{Sintaxis}
       \begin{frame}[fragile]{Erlang. Sintaxis}
-        \todo{Poner una flecha en el operador ! para indicar que es así como se pasan los mensajes}
         \begin{minted}{erlang}
           % Proceso se envia mensaje así mismo
           1> Pid = self().
@@ -93,23 +92,56 @@
 
       \begin{frame}[fragile]{Erlang. Sintaxis}
         \begin{minted}{erlang}
-          receive
-            Pattern1 when Guard1 -> Expr1;
-            Pattern2 when Guard2 -> Expr2;
-            Pattern3 -> Expr3
-          end
+          % Crear un nuevo proceso
+          Pid = spawn(fun() -> ok end).
+          <0.86.0>
+          2> Pid ! hello .
+          hello
         \end{minted}
+      \end{frame}
+
+      \begin{frame}[fragile]{Erlang. Sintaxis}
+        \begin{minted}{erlang}
+          loop(State) ->
+            receive
+              Pattern1 when Guard1 -> Expr1;
+              Pattern2 when Guard2 -> Expr2;
+              Pattern3 -> Expr3
+            end.
+        \end{minted}
+      \end{frame}
+
+      \begin{frame}
+        \begin{figure}
+          \includegraphics{actor-modelling.png}
+        \end{figure}
+      \end{frame}
+
+      \begin{frame}{Erlang. Paso de mensajes}
+        \begin{figure}
+          \includegraphics[width=0.5\textwidth]{msg-match.png}
+        \end{figure}
       \end{frame}
 
   \section{Ejemplo práctico}
     \begin{frame}{Ejemplo práctico}
+      \todo{usar el ejemplo del banco}
+    \end{frame}
+
+    \begin{frame}{Notas}
+      \begin{itemize}
+        \item Este ejemplo es la manera más ``explícita'' de implementar
+        un servidor con estado
+        \item Existen \textit{behaviors} dentro del lenguaje para construir
+        este tipo de arquitecturas
+      \end{itemize}
     \end{frame}
 
   \section{Conclusiones}
     \begin{frame}{Conclusiones}
       \begin{itemize}
-        \item a
-        \item b
+        \item Erlang y MPI no resuelven los mismos problemas
+        \item Implementar un
         \item c
       \end{itemize}
     \end{frame}
@@ -118,6 +150,7 @@
     \begin{frame}{Bibliografía}
       \begin{itemize}
         \item Getting Started with Erlang \url{https://www.erlang.org/doc/getting_started/intro.html}
+        \item Learn You Some Erlang for Great Good! \url{https://learnyousomeerlang.com}
       \end{itemize}
     \end{frame}
 \end{document}
