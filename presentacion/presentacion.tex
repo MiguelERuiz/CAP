@@ -11,7 +11,7 @@
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 \presetkeys{todonotes}{inline}{}
 \usepackage{pgfpages}
-
+\usepackage[pdf]{graphviz}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definición de comandos
 \setlength{\marginparwidth}{2cm}
@@ -111,7 +111,7 @@
         \end{minted}
       \end{frame}
 
-      \begin{frame}
+      \begin{frame}{Erlang. Modelo de actores}
         \begin{figure}
           \includegraphics{actor-modelling.png}
         \end{figure}
@@ -119,13 +119,48 @@
 
       \begin{frame}{Erlang. Paso de mensajes}
         \begin{figure}
-          \includegraphics[width=0.5\textwidth]{msg-match.png}
+          \includegraphics[width=0.45\textwidth]{msg-match.png}
         \end{figure}
       \end{frame}
 
   \section{Ejemplo práctico}
     \begin{frame}{Ejemplo práctico}
-      \todo{usar el ejemplo del banco}
+      \begin{itemize}
+        \item Banco que gestiona cuentas del tipo \mintinline{erlang}{{Id::integer(), Balance::integer()}}
+        \item Operaciones:
+        \begin{itemize}
+          \item Arrancar servidor
+          \item Crear cuenta
+          \item Ingresar y sacar dinero de una cuenta
+          \item Transferir dinero entre cuentas
+          \item Consultar saldo de una cuenta
+          \item Parar servidor
+        \end{itemize}
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{create_bank-new_account.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{deposit-withdraw_money.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{transfer-balance.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{terminate.dot.png}
+      \end{figure}
     \end{frame}
 
     \begin{frame}{Notas}

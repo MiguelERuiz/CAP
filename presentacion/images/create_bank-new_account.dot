@@ -1,0 +1,13 @@
+digraph G {
+  rankdir=LR
+  {
+    node [margin=0.3 fontsize=10 width=0.7 style=filled shape="circle"]
+    client [fillcolor=cadetblue1 fixedsize=true label="client"]
+    bank [fillcolor=indianred1 label="bank_server"]
+  }
+
+  client -> bank [label="create_bank"]
+  client -> bank [label="pid()", dir=back]
+  client -> bank [label="new_account(N)"]
+  client -> bank [label="boolean()", dir=back]
+}
