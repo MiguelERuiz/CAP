@@ -1,7 +1,7 @@
 digraph G {
   rankdir=LR
   {
-    node [margin=0.3 fontsize=10 width=0.7 style=filled shape="circle"]
+    node [style=filled shape="circle"]
     client [fillcolor=cadetblue1 fixedsize=true label="client"]
     bank [fillcolor=indianred1 label="bank_server"]
   }

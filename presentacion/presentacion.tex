@@ -57,7 +57,7 @@
   \begin{frame}{Introducción}
     \begin{itemize}
       \item Hemos visto cómo funciona en computación distribuida el paso de
-      mensajes qué problemas puede resolver
+      mensajes y los tipos de problemas que puede resolver
       \item Ahora nos centraremos en cómo funciona el paso de mensajes en Erlang
       y sus aplicaciones
     \end{itemize}
@@ -142,25 +142,43 @@
 
     \begin{frame}{Ejemplo práctico}
       \begin{figure}
-        \includegraphics[width=0.75\textwidth]{create_bank-new_account.dot.png}
+        \includegraphics[width=0.75\textwidth]{1_create_bank.dot.png}
       \end{figure}
     \end{frame}
 
     \begin{frame}{Ejemplo práctico}
       \begin{figure}
-        \includegraphics[width=0.75\textwidth]{deposit-withdraw_money.dot.png}
+        \includegraphics[width=0.75\textwidth]{2_new_account.dot.png}
       \end{figure}
     \end{frame}
 
     \begin{frame}{Ejemplo práctico}
       \begin{figure}
-        \includegraphics[width=0.75\textwidth]{transfer-balance.dot.png}
+        \includegraphics[width=0.75\textwidth]{3_deposit_money.dot.png}
       \end{figure}
     \end{frame}
 
     \begin{frame}{Ejemplo práctico}
       \begin{figure}
-        \includegraphics[width=0.75\textwidth]{terminate.dot.png}
+        \includegraphics[width=0.75\textwidth]{4_withdraw_money.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{5_transfer.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.75\textwidth]{6_balance.dot.png}
+      \end{figure}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
+      \begin{figure}
+        \includegraphics[width=0.5\textwidth]{7_terminate.dot.png}
       \end{figure}
     \end{frame}
 
@@ -364,7 +382,7 @@
 
     \begin{frame}{Ejemplo práctico}
       \begin{itemize}
-        \item Este ejemplo es la manera más ``explícita'' de implementar
+        \item Este ejemplo es la manera más \textit{explícita} de implementar
         un servidor con estado
         \item Existen \textit{behaviors} dentro del lenguaje para construir
         este tipo de arquitecturas
