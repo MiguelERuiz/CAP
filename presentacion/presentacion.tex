@@ -79,6 +79,19 @@
         \end{itemize}
       \end{frame}
 
+      \subsection{Actores}
+      \begin{frame}{Erlang. Modelo de actores}
+        \begin{figure}
+          \includegraphics{actor-modelling.png}
+        \end{figure}
+      \end{frame}
+
+      \begin{frame}{Erlang. Paso de mensajes}
+        \begin{figure}
+          \includegraphics[width=0.45\textwidth]{msg-match.png}
+        \end{figure}
+      \end{frame}
+
       \subsection{Sintaxis}
       \begin{frame}[fragile]{Erlang. Sintaxis}
         \begin{minted}{erlang}
@@ -109,18 +122,6 @@
               Pattern3 -> Expr3
             end.
         \end{minted}
-      \end{frame}
-
-      \begin{frame}{Erlang. Modelo de actores}
-        \begin{figure}
-          \includegraphics{actor-modelling.png}
-        \end{figure}
-      \end{frame}
-
-      \begin{frame}{Erlang. Paso de mensajes}
-        \begin{figure}
-          \includegraphics[width=0.45\textwidth]{msg-match.png}
-        \end{figure}
       \end{frame}
 
   \section{Ejemplo práctico}
@@ -163,7 +164,205 @@
       \end{figure}
     \end{frame}
 
-    \begin{frame}{Notas}
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        %% API
+        create_bank() -> spawn(fun() -> loop([]) end).
+
+        terminate(Pid) ->
+        Pid ! {terminate,self()},
+        receive
+          Msg -> Msg
+        end.
+
+        new_account(Pid,AccountNumber) ->
+          Pid ! {new_account,AccountNumber,self()},
+          receive
+            Msg -> Msg
+          end.
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        withdraw_money(Pid,AccountNumber,Quantity) ->
+          Pid ! {withdraw_money,AccountNumber,Quantity,self()},
+          receive
+            Msg -> Msg
+          end.
+
+        deposit_money(Pid, AccountNumber,Quantity) ->
+          Pid ! {deposit_money,AccountNumber,Quantity,self()},
+          receive
+            Msg -> Msg
+          end.
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        transfer(Pid,FromAccount,ToAccount,Quantity) ->
+          Pid ! {transfer,FromAccount,ToAccount,Quantity,self()},
+          receive
+            Msg -> Msg
+          end.
+
+        balance(Pid,Account) ->
+          Pid ! {balance,Account,self()},
+          receive
+            Msg -> Msg
+          end.
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        loop(Accounts) ->
+          receive
+            {new_account,AccountNumber,From} ->
+              case proplists:lookup(AccountNumber,Accounts) of
+                none -> %% Podemos crear esa cuenta
+                  From ! true,
+                  loop([{AccountNumber,0}|Accounts]);
+                {AccountNumber,_} -> %% Ya existe esa cuenta
+                  From ! false,
+                  loop(Accounts)
+                end;
+            ...
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        {withdraw_money,AccountNumber,Quantity,From} ->
+          case check_balance(AccountNumber,Accounts) of
+            none -> %% No existe la cuenta
+              From ! {error, not_found},
+              loop(Accounts);
+            Balance when Quantity =< Balance->
+              From ! {ok,Quantity},
+              UpdatedAccount = {AccountNumber,Balance-Quantity},
+              NewAccounts = lists:keyreplace(AccountNumber,1,
+                              Accounts, UpdatedAccount),                             ),
+              loop(NewAccounts);
+            Balance when Quantity > Balance ->
+              From ! {error, not_money},
+              loop(Accounts)
+          end;
+          ...
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        {deposit_money,AccountNumber,Quantity,From} ->
+          case proplists:lookup(AccountNumber,Accounts) of
+            none -> %% No existe la cuenta
+              From ! {error, not_found},
+              loop(Accounts);
+            {AccountNumber,_} ->
+              Balance = proplists:get_value(AccountNumber,Accounts),
+              NewBalance = Balance + Quantity,
+              From ! {ok,NewBalance},
+              NewAccounts = lists:keyreplace(AccountNumber,1,
+                              Accounts,{AccountNumber,NewBalance}),
+              loop(NewAccounts)
+          end;
+          ...
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\tiny]{erlang}
+        {transfer,FromAccount,ToAccount,Quantity,From} ->
+          case check_balance(ToAccount,Accounts) of
+            none ->
+              From ! {error, to_account_not_found},
+              loop(Accounts);
+            ToBalance ->
+              case check_balance(FromAccount,Accounts) of
+                none ->
+                  From ! {error, from_account_not_found},
+                  loop(Accounts);
+                FromBalance when Quantity =< FromBalance ->
+                  NewFromBalance = FromBalance - Quantity,
+                  NewToBalance = ToBalance + Quantity,
+                  From ! {ok,Quantity},
+                  NewAccounts = lists:keyreplace(FromAccount,1,
+                                  lists:keyreplace(ToAccount,1,
+                                    Accounts,{ToAccount,NewToBalance}),
+                                  {FromAccount,NewFromBalance}),
+                  loop(NewAccounts);
+                FromBalance when Quantity > FromBalance ->
+                  From ! {error, from_account_not_money},
+                  loop(Accounts)
+              end
+          end;
+          ...
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+        {balance,Account,From} ->
+          case proplists:lookup(Account,Accounts) of
+            none ->
+              From ! {error,not_found},
+              loop(Accounts);
+            {Account,_} ->
+              Balance = proplists:get_value(Account,Accounts),
+              From ! {your_balance, Balance},
+              loop(Accounts)
+          end;
+          ...
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Implementación}
+      \begin{minted}[fontsize=\small]{erlang}
+          {terminate, From} ->
+            From ! ok,
+            ok;
+          Unknown ->
+            io:format("Unexpected message: ~p~n",[Unknown]),
+            loop(Accounts)
+          end.
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Pruebas}
+      \begin{minted}[fontsize=\small]{erlang}
+        1> Bank = bank:create_bank().
+        <0.86.0>
+        2> bank:new_account(Bank, 1).
+        true
+        3> bank:new_account(Bank, 2).
+        true
+        4> bank:deposit_money(Bank, 2, 50).
+        {ok,50}
+        5> bank:withdraw_money(Bank, 1, 20).
+        {error,not_money}
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}[fragile]{Ejemplo práctico. Pruebas}
+      \begin{minted}[fontsize=\small]{erlang}
+        6> bank:transfer(Bank, 2, 1, 30).
+        {ok,30}
+        7> bank:balance(Bank, 2).
+        {your_balance,20}
+        8> bank:balance(Bank, 1).
+        {your_balance,30}
+        9> bank:withdraw_money(Bank, 1, 20).
+        {ok,20}
+        10> bank:balance(Bank, 1).
+        {your_balance,10}
+        11> bank:terminate(Bank).
+        ok
+      \end{minted}
+    \end{frame}
+
+    \begin{frame}{Ejemplo práctico}
       \begin{itemize}
         \item Este ejemplo es la manera más ``explícita'' de implementar
         un servidor con estado
@@ -176,8 +375,8 @@
     \begin{frame}{Conclusiones}
       \begin{itemize}
         \item Erlang y MPI no resuelven los mismos problemas
-        \item Implementar un
-        \item c
+        \item Erlang ofrece diversos mecanismos para crear aplicaciones
+        concurrentes, con alta disponibilidad y fialibidad
       \end{itemize}
     \end{frame}
 
@@ -185,7 +384,8 @@
     \begin{frame}{Bibliografía}
       \begin{itemize}
         \item Getting Started with Erlang \url{https://www.erlang.org/doc/getting_started/intro.html}
-        \item Learn You Some Erlang for Great Good! \url{https://learnyousomeerlang.com}
+        \item Learn You Some Erlang for Great Good! - Fred Hébert \url{https://learnyousomeerlang.com}
+        \item Erlang Programming - Francesco Cesarini \& Simon Thompson
       \end{itemize}
     \end{frame}
 \end{document}
