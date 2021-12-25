@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
 
 	#ifdef _OPENACC
-		acc_init(acc_device_nvidia);
+		acc_init(acc_device_not_host);
 	#endif
 
 	printf("Jacobi relaxation Calculation: %d x %d mesh\n", n, m);
@@ -65,13 +65,13 @@ int main(int argc, char** argv)
 	StartTimer();
 
 	#ifdef _OPENACC
-		#pragma acc data copy(A[0:n*m], Anew[0:n*m])
+		#pragma acc data copyin(A[0:n*m]), create(Anew[0:n*m])
 	#endif
 	while ( error > tol && iter < iter_max )
 	{
 		error = 0.0;
 		#ifdef _OPENACC
-			#pragma acc parallel loop reduction(max:error)
+			#pragma acc parallel loop reduction(max:error) collapse(2)
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 		}
 
 		#ifdef _OPENACC
-			#pragma acc parallel loop
+			#pragma acc parallel loop collapse(2)
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 	free(A); free(Anew);
 
 	#ifdef _OPENACC
-		acc_shutdown(acc_device_nvidia);
+		acc_shutdown(acc_device_not_host);
 	#endif
 }
 
