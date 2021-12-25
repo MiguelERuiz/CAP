@@ -37,11 +37,6 @@ int main(int argc, char** argv)
 		m = 4096;
 	}
 
-	#ifdef _OPENACC
-		acc_init(acc_device_not_host);
-		printf(" Compiling with OpenACC support \n");
-	#endif
-
 	A    = (double *)malloc(n*m*sizeof(double));
 	Anew = (double *)malloc(n*m*sizeof(double));
 
@@ -57,7 +52,9 @@ int main(int argc, char** argv)
 	}
 
 
-
+	#ifdef _OPENACC
+		acc_init(acc_device_nvidia);
+	#endif
 
 	printf("Jacobi relaxation Calculation: %d x %d mesh\n", n, m);
 
@@ -67,11 +64,14 @@ int main(int argc, char** argv)
 {
 	StartTimer();
 
+	#ifdef _OPENACC
+		#pragma acc data copy(A[0:n*m], Anew[0:n*m])
+	#endif
 	while ( error > tol && iter < iter_max )
 	{
 		error = 0.0;
 		#ifdef _OPENACC
-			#pragma acc kernels
+			#pragma acc parallel loop reduction(max:error)
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 		}
 
 		#ifdef _OPENACC
-			#pragma acc kernels
+			#pragma acc parallel loop
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
@@ -105,5 +105,9 @@ int main(int argc, char** argv)
 	printf(" total: %f s\n", runtime / 1000);
 
 	free(A); free(Anew);
+
+	#ifdef _OPENACC
+		acc_shutdown(acc_device_nvidia);
+	#endif
 }
 
