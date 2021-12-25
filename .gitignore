@@ -33,6 +33,9 @@ pingpong
 piparallel
 piserial
 
+# practica 4
+*.exe
+
 
 # latex
 *aux
