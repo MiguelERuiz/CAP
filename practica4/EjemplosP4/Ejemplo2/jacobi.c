@@ -37,6 +37,10 @@ int main(int argc, char** argv)
 		m = 4096;
 	}
 
+	#ifdef _OPENACC
+		acc_init(acc_device_not_host);
+		printf(" Compiling with OpenACC support \n");
+	#endif
 
 	A    = (double *)malloc(n*m*sizeof(double));
 	Anew = (double *)malloc(n*m*sizeof(double));
@@ -66,7 +70,9 @@ int main(int argc, char** argv)
 	while ( error > tol && iter < iter_max )
 	{
 		error = 0.0;
-
+		#ifdef _OPENACC
+			#pragma acc kernels
+		#endif
 		for( int j = 1; j < n-1; j++)
 		{
 			for( int i = 1; i < m-1; i++ )
@@ -77,11 +83,14 @@ int main(int argc, char** argv)
 			}
 		}
 
+		#ifdef _OPENACC
+			#pragma acc kernels
+		#endif
 		for( int j = 1; j < n-1; j++)
 		{
 			for( int i = 1; i < m-1; i++ )
 			{
-				A[j*m+i] = Anew[j*m+i];    
+				A[j*m+i] = Anew[j*m+i];
 			}
 		}
 
