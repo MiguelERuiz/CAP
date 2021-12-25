@@ -4,7 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef _OPENACC
+#include <openacc.h>
+#endif
+// #ifdef _OPENMP
 #include <omp.h>
+// #endif
 
 #include "colormap.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -12,18 +17,20 @@
 
 // Simulation parameters
 static const unsigned int N = 500;
+static const unsigned long SIZE_MATRIX = N*N;
 
 static const float SOURCE_TEMP = 5000.0f;
 static const float BOUNDARY_TEMP = 1000.0f;
 
 static const float MIN_DELTA = 0.05f;
 static const unsigned int MAX_ITERATIONS = 20000;
+#ifdef _OPENACC
 
-
+#pragma acc routine seq
+#endif
 static unsigned int idx(unsigned int x, unsigned int y, unsigned int stride) {
     return y * stride + x;
 }
-
 
 static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 	// init
@@ -46,6 +53,9 @@ static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 
 static void step(unsigned int source_x, unsigned int source_y, const float * current, float * next) {
 
+	#ifdef _OPENACC
+		#pragma acc parallel loop present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX]) collapse(2)
+  #endif
 	for (unsigned int y = 1; y < N-1; ++y) {
 		for (unsigned int x = 1; x < N-1; ++x) {
 			if ((y == source_y) && (x == source_x)) {
@@ -62,6 +72,9 @@ static void step(unsigned int source_x, unsigned int source_y, const float * cur
 
 static float diff(const float * current, const float * next) {
 	float maxdiff = 0.0f;
+	#ifdef _OPENACC
+    #pragma acc parallel loop reduction(max:maxdiff) present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
+	#endif
 	for (unsigned int y = 1; y < N-1; ++y) {
 		for (unsigned int x = 1; x < N-1; ++x) {
 			maxdiff = fmaxf(maxdiff, fabsf(next[idx(x, y, N)] - current[idx(x, y, N)]));
@@ -90,6 +103,7 @@ void write_png(float * current, int iter) {
 
 
 int main() {
+
 	size_t array_size = N * N * sizeof(float);
 
 	float * current = malloc(array_size);
@@ -106,17 +120,27 @@ int main() {
 	double start = omp_get_wtime();
 
 	float t_diff = SOURCE_TEMP;
+
+  #ifdef _OPENACC
+		#pragma acc data copy(current[0:SIZE_MATRIX]) copyin(next[0:SIZE_MATRIX])
+  #endif
 	for (unsigned int it = 0; (it < MAX_ITERATIONS) && (t_diff > MIN_DELTA); ++it) {
 		step(source_x, source_y, current, next);
 		t_diff = diff(current, next);
+
 		if(it%(MAX_ITERATIONS/10)==0){
 			printf("%u: %f\n", it, t_diff);
 		}
-
-		float * swap = current;
-		current = next;
-		next = swap;
+		#ifdef _OPENACC
+			#pragma acc data present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
+		#endif
+		{
+			float * swap = current;
+			current = next;
+			next = swap;
+		}
 	}
+
 	double stop = omp_get_wtime();
 	printf("Computing time %f s.\n", stop-start);
 

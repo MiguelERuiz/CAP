@@ -23,5 +23,5 @@ pgi:
 omp_offload:
 	$(ICX) $(CFLAGS_OFFLOAD) $(NAME).c -o $(NAME).icx.exe
 
-clean: 
-	rm -f __hmpp_*  *.exe *.yaml
+clean:
+	rm -f __hmpp_*  *.exe *.yaml heat20000.png
