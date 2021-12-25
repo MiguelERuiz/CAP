@@ -67,11 +67,18 @@ int main(int argc, char** argv)
 	#ifdef _OPENACC
 		#pragma acc data copyin(A[0:n*m]), create(Anew[0:n*m])
 	#endif
+	#ifdef _OPENMP
+		#pragma omp target enter data map(alloc : Anew[0:n*m]) map(to : A[0:n*m])
+	#endif
 	while ( error > tol && iter < iter_max )
 	{
 		error = 0.0;
 		#ifdef _OPENACC
 			#pragma acc parallel loop reduction(max:error) collapse(2)
+		#endif
+		#ifdef _OPENMP
+			#pragma omp target teams distribute parallel for reduction(max:error) \
+				collapse(2)
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
@@ -85,6 +92,9 @@ int main(int argc, char** argv)
 
 		#ifdef _OPENACC
 			#pragma acc parallel loop collapse(2)
+		#endif
+		#ifdef _OPENMP
+			#pragma omp target teams distribute parallel for collapse(2)
 		#endif
 		for( int j = 1; j < n-1; j++)
 		{
