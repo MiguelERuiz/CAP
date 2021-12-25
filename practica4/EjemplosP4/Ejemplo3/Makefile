@@ -7,7 +7,7 @@ CFLAGS_OFFLOAD = $(CXXFLAGS) -fiopenmp -fopenmp-targets=spir64 -qopt-report
 
 default: host gpu
 
-NAME=madelbrot
+NAME=mandelbrot
 
 
 host: mandelbrot.o main.o
@@ -27,4 +27,4 @@ omp_offload:
 
 
 clean:
-	rm -f *.o __hmpp_*  *.exe *.yaml
+	rm -f *.o __hmpp_*  *.exe *.yaml image.pgm

@@ -6,6 +6,7 @@
 
 using namespace std;
 
+#pragma omp declare target
 unsigned char mandelbrot(int Px, int Py) {
   double x0=xmin+Px*dx;
   double y0=ymin+Py*dy;
@@ -19,3 +20,4 @@ unsigned char mandelbrot(int Px, int Py) {
   }
   return (double)MAX_COLOR*i/MAX_ITERS;
 }
+#pragma omp end declare target
