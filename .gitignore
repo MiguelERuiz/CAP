@@ -36,6 +36,7 @@ piserial
 # practica 4
 *.exe
 image.pgm
+*.yaml
 
 # latex
 *aux
