@@ -25,12 +25,17 @@ static const float BOUNDARY_TEMP = 1000.0f;
 static const float MIN_DELTA = 0.05f;
 static const unsigned int MAX_ITERATIONS = 20000;
 #ifdef _OPENACC
-
 #pragma acc routine seq
+#endif
+#ifdef _OPENMP
+#pragma omp declare target
 #endif
 static unsigned int idx(unsigned int x, unsigned int y, unsigned int stride) {
     return y * stride + x;
 }
+#ifdef _OPENMP
+#pragma omp end declare target
+#endif
 
 static void init(unsigned int source_x, unsigned int source_y, float * matrix) {
 	// init
@@ -56,22 +61,30 @@ static void step(unsigned int source_x, unsigned int source_y, const float * cur
 	#ifdef _OPENACC
 		#pragma acc parallel loop present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX]) collapse(2)
   #endif
+	#ifdef _OPENMP
+		#pragma omp target teams distribute
+	#endif
 	for (unsigned int y = 1; y < N-1; ++y) {
+		#ifdef _OPENMP
+		#pragma omp parallel for simd
+		#endif
 		for (unsigned int x = 1; x < N-1; ++x) {
 			if ((y == source_y) && (x == source_x)) {
 				continue;
 			}
 			next[idx(x, y, N)] = (current[idx(x, y-1, N)] +
-			current[idx(x-1, y, N)] +
-			current[idx(x+1, y, N)] +
-			current[idx(x, y+1, N)]) / 4.0f;
+														current[idx(x-1, y, N)] +
+														current[idx(x+1, y, N)] +
+														current[idx(x, y+1, N)]) / 4.0f;
 		}
 	}
 }
 
-
 static float diff(const float * current, const float * next) {
 	float maxdiff = 0.0f;
+	#ifdef _OPENMP
+	#pragma omp target teams distribute parallel for reduction(max:maxdiff)
+	#endif
 	#ifdef _OPENACC
     #pragma acc parallel loop reduction(max:maxdiff) present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
 	#endif
@@ -125,19 +138,26 @@ int main() {
 		#pragma acc data copy(current[0:SIZE_MATRIX]) copyin(next[0:SIZE_MATRIX])
   #endif
 	for (unsigned int it = 0; (it < MAX_ITERATIONS) && (t_diff > MIN_DELTA); ++it) {
-		step(source_x, source_y, current, next);
-		t_diff = diff(current, next);
-
-		if(it%(MAX_ITERATIONS/10)==0){
-			printf("%u: %f\n", it, t_diff);
-		}
-		#ifdef _OPENACC
-			#pragma acc data present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
-		#endif
+		#ifdef _OPENMP
+			#pragma omp target data map(tofrom: current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
+    #endif
 		{
-			float * swap = current;
-			current = next;
-			next = swap;
+			step(source_x, source_y, current, next);
+			t_diff = diff(current, next);
+			#ifdef _OPENMP
+        #pragma omp target update to(t_diff)
+      #endif
+			#ifdef _OPENACC
+				#pragma acc data present(current[0:SIZE_MATRIX], next[0:SIZE_MATRIX])
+			#endif
+			{
+				float * swap = current;
+				current = next;
+				next = swap;
+			}
+			if(it%(MAX_ITERATIONS/10)==0){
+				printf("%u: %f\n", it, t_diff);
+			}
 		}
 	}
 
