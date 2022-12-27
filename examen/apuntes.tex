@@ -1,0 +1,137 @@
+\documentclass{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Definicion de paquetes
+\usepackage{minted}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\definecolor{LightGray}{gray}{0.85}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setcounter{secnumdepth}{4}
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Comienza el documento
+
+\begin{document}
+
+\tableofcontents
+
+\section{Vectorización}
+  \subsection{Tipos de vectorización}
+    Tipos de vectorización:
+    \begin{itemize}
+      \item Intrínseca (Uso de estructuras específicas de datos)
+      \item Automática (Compilador vectoriza)
+      \item Guiada (Uso de sintaxis especial en el código)
+    \end{itemize}
+
+    \subsubsection{Vectorización intrínsecas}
+      \begin{itemize}
+        \item SSE (128b)
+        \item AVX (256b)
+        \item AVX2 (512b)
+      \end{itemize}
+
+      Formato de las instrucciones intrínsecas
+
+      \begin{minted}{c}
+        _mm_instruction_suffix(...)
+        // Ejemplos
+        // aligned: Los datos tienen que estar alineados a la linea de cache
+        // Requiere un solo acceso para traer los datos
+        _mm_load_ps(float const* mem_addr);
+        // unaligned: Los datos pueden estar en bloques diferentes
+        // Requiere dos accesos a memoria
+        _mm_loadu_ps(float const* mem_addr);
+      \end{minted}
+
+      \newpage
+
+      \begin{minted}{c}
+        #include <xmmintrin.h>
+        int main () {
+        ...
+        float a[4]={1.0,2.0,3.0,4.0};//a must be 16-byte aligned
+        __m128 x = _mm_load_ps(a);
+        __m128 a, b;
+        __m128 c = _mm_add_ps(a, b);
+        ...
+        }
+      \end{minted}
+
+    \subsubsection{Vectorización automática}
+      El compilador realiza automáticamente la vectorización en tiempo de
+      compilación, aunque tiene \textbf{limitaciones}:
+      \begin{itemize}
+        \item Es solo válido en bucles \textbf{\underline{internos}}
+        \item Deben conocerse previamente el número de iteraciones
+        \item No ha de haber dependencias entre iteraciones
+        \item Se debe especificar aquellas funciones que están vectorizadas
+      \end{itemize}
+
+    \subsubsection{Vectorización guiada}
+      \begin{minted}{c}
+        // Fuerza la vectorización de bucles
+        // Permite bucles con funciones explicitamente definidas como SIMD
+        // Para bucles internos
+        #pragma omp simd
+
+        #pragma omp declare simd
+        float my_simple_add(float x1, float x2){
+          return x1 + x2;
+        }
+        ...
+        // May be in a separate file
+        #pragma omp simd
+        for (int i = 0; i < N, ++i) {
+        output[i] = my_simple_add(inputa[i], inputb[i]);
+        }
+
+        // Informa al compilador que no tiene dependencias
+        #pragma ivdep
+      \end{minted}
+
+      \paragraph{Alineamiento de datos}
+
+        \begin{minted}{c}
+          float buf_static[1000] __attribute__((aligned(64)));
+          float *buf_dynamic = (float*) _mm_malloc(buffer_size, 64);
+
+          // Para informar de que el vector está alineado
+          # pragma vector aligned
+        \end{minted}
+
+      \paragraph{Otros pragmas}
+
+        \begin{minted}{c}
+          #pragma loop count(n)
+          #pragma vector always
+          #pragma novector
+        \end{minted}
+
+\section{Paralelización basada en memoria compartida}
+  \begin{minted}{c}
+    void main ( ) {
+      #pragma omp parallel
+      ... /* An unkown number of threads here. Use OMP_NUM_THREADS */
+      omp_set_num_threads(2) ;
+      #pragma omp parallel
+      ... /* A team of two threads here */
+      #pragma omp parallel num_threads(random() %4+1) if(0)
+      ... /* A team of 1 thread here */
+    }
+  \end{minted}
+  \subsection{Compartición de datos}
+    Tipo de clausulas
+  \subsection{Trabajo compartido}
+\section{Paralelización basada en memoria distribuida}
+\section{Computación heterogénea}
+
+\end{document}
